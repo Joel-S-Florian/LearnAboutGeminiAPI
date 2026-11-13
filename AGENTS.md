@@ -8,6 +8,7 @@ Repositorio de aprendizaje personal de Joel (estudiante de ingenieria de softwar
 - **No afirmes causas que no verificaste.** Marca lo no probado como "no verificado" (en chat, en comentarios y en los manuales).
 - **No hagas commit ni push** hasta que Joel lo pida; son dos pasos separados.
 - Un tema a la vez: tema y subtemas, sin saltar.
+- Al cerrar cada sesion, actualiza la seccion "Donde vamos" de este archivo.
 
 ## Estructura
 ```
@@ -41,5 +42,10 @@ Temas actuales: ver la tabla del `README.md`. Un tema nuevo = carpeta nueva con 
 - Audio por URL directa dio 400 `invalid_request`; **causa no confirmada**.
 - **No verificado:** `03-generacion-imagen/imagen_generada.py` (la llamada se colgo >10 min); si `response_format` es obligatorio en TTS; que `style` y el idioma suenen como se espera.
 
-## Pendiente de estudiar
-TTS: etiquetas inline y `style`, streaming, formatos de salida, voces (biblioteca extendida, diseno, remix, replica). Musica con Lyria 3.5. Generacion de imagenes: relaciones de aspecto, edicion, referencias.
+## Donde vamos (actualizar al cerrar cada sesion)
+Ultima actualizacion: 2026-11-12.
+
+- **Hecho:** 01 primera llamada · 02 imagen + audio en una peticion (con reintentos) · 04 TTS de uno y de dos hablantes.
+- **En curso: 04-tts.** Faltan los subtemas: etiquetas inline (`<short pause>`) frente a `style`, streaming, formatos de salida (`audio/l16`, mulaw, alaw), voces (biblioteca extendida, diseno, remix, replica) y escribir `manual-tts.md`. **Siguiente paso: etiquetas inline y `style`**, empezando por probar una frase en espanol con Kore.
+- **Por verificar:** `03-generacion-imagen` (se colgo; reintentar con un `timeout` en la llamada); si `response_format` es obligatorio en TTS; escuchar los WAV de `salidas/`.
+- **Por estudiar despues:** musica con Lyria 3.5 (clip y cancion completa, letras, imagen a musica); generacion de imagenes: relaciones de aspecto, edicion, referencias.
