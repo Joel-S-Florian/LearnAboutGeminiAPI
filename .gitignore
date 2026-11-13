@@ -1,7 +1,4 @@
 .env
-
-sample_audio.mp3
-
-generated_image.png
-out*.wav
+salidas/
+_borradores/
 __pycache__/

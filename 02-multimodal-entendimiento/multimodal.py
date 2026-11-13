@@ -4,12 +4,20 @@
 # Aqui: una imagen local (Base64) + un audio (subido a la Files API) en la misma llamada.
 
 import base64
-import os
 import random
 import time
 import urllib.request
 
+from pathlib import Path
+
 from google import genai
+
+# Rutas relativas a ESTE archivo: el script funciona ejecutado desde cualquier carpeta
+RAIZ = Path(__file__).resolve().parent.parent
+ASSETS = RAIZ / "assets"    # archivos de entrada (sample.jpg)
+SALIDAS = RAIZ / "salidas"  # archivos generados/descargados (ignorados por git)
+SALIDAS.mkdir(exist_ok=True)
+AUDIO_PATH = SALIDAS / "sample_audio.mp3"
 
 # Igual que en pregunta_gemini.py: el SDK busca la variable de entorno GEMINI_API_KEY
 client = genai.Client()
@@ -23,18 +31,18 @@ AUDIO_URL = "https://storage.googleapis.com/generativeai-downloads/data/State_of
 # "rb" = leer en modo binario (la imagen son bytes, no texto)
 # La API recibe JSON, que solo admite texto, por eso convertimos los bytes a Base64
 # b64encode devuelve bytes; .decode("utf-8") los convierte en un str
-with open("sample.jpg", "rb") as f:
+with open(ASSETS / "sample.jpg", "rb") as f:
     image_b64 = base64.b64encode(f.read()).decode("utf-8")
 
 # --- AUDIO ---
 # Mandar la URL directa dio error 400 ("invalid argument"); la causa exacta NO esta confirmada.
 # Lo que si funciono: descargar el archivo y subirlo a la Files API de Google.
 # Solo lo descargamos si todavia no existe, para no bajarlo en cada ejecucion
-if not os.path.exists("sample_audio.mp3"):
-    urllib.request.urlretrieve(AUDIO_URL, "sample_audio.mp3")
+if not AUDIO_PATH.exists():
+    urllib.request.urlretrieve(AUDIO_URL, AUDIO_PATH)
 
 # files.upload devuelve un objeto con .uri, la referencia que usamos en la peticion
-audio_file = client.files.upload(file="sample_audio.mp3", config={"mime_type": "audio/mp3"})
+audio_file = client.files.upload(file=str(AUDIO_PATH), config={"mime_type": "audio/mp3"})
 
 
 def ask(model):

@@ -10,6 +10,19 @@ Cada commit representa un **episodio** de aprendizaje: un concepto entendido, un
 - Notas y manuales en Markdown con los conceptos aprendidos.
 - Un historial de commits que funciona como bitácora del progreso.
 
+## Temas
+
+Una carpeta por tema, en orden de estudio. Cada una trae sus scripts comentados y su apunte (`manual-*.md`).
+
+| Carpeta | Tema |
+| :--- | :--- |
+| `01-primera-llamada/` | Primera llamada a la API (`generate_content`) |
+| `02-multimodal-entendimiento/` | Entender imagen + audio en una sola petición, reintentos con backoff |
+| `03-generacion-imagen/` | Generar imágenes (sin verificar) |
+| `04-tts/` | Texto a voz: uno y dos hablantes |
+
+Otras carpetas: `assets/` (archivos de entrada), `salidas/` y `_borradores/` (ignoradas por git). Las reglas para trabajar en el repo están en `AGENTS.md`.
+
 ## Requisitos
 
 - Python 3.10 o superior
@@ -39,7 +52,7 @@ Cada commit representa un **episodio** de aprendizaje: un concepto entendido, un
 4. Ejecuta cualquier script del repositorio:
 
    ```bash
-   python pregunta_gemini.py
+   python 01-primera-llamada/pregunta_gemini.py
    ```
 
 ## Seguridad

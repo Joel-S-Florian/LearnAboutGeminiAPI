@@ -1,0 +1,45 @@
+# AGENTS.md — LearnAboutGeminiAPI
+
+Repositorio de aprendizaje personal de Joel (estudiante de ingenieria de software) sobre la API de Gemini. El objetivo es **entender**, no acumular codigo: cada tema se explica paso a paso.
+
+## Como trabajar con Joel
+- Responde en **espanol**. Explica que hace cada parte del codigo, antes o despues de cambiarla.
+- Usa diagramas **Mermaid** cuando ayuden (flujos, secuencias).
+- **No afirmes causas que no verificaste.** Marca lo no probado como "no verificado" (en chat, en comentarios y en los manuales).
+- **No hagas commit ni push** hasta que Joel lo pida; son dos pasos separados.
+- Un tema a la vez: tema y subtemas, sin saltar.
+
+## Estructura
+```
+NN-nombre-del-tema/   una carpeta por tema, en orden de estudio
+  script.py ...       codigo comentado en espanol
+  manual-*.md         apunte del tema (con Mermaid)
+assets/               archivos de ENTRADA (sample.jpg ...), versionados
+salidas/              archivos generados o descargados (ignorada por git)
+_borradores/          pruebas sueltas (ignorada por git)
+AGENTS.md  CLAUDE.md  README.md
+```
+Temas actuales: ver la tabla del `README.md`. Un tema nuevo = carpeta nueva con el siguiente numero.
+
+## Reglas del codigo
+- Comentarios en espanol **sin tildes ni enie** (evita problemas de codificacion en Windows), en el estilo de `01-primera-llamada/pregunta_gemini.py`.
+- Rutas con `Path(__file__)` (ver `04-tts/tts.py`): los scripts deben funcionar ejecutados desde la raiz o desde su carpeta. Entradas desde `assets/`, salidas a `salidas/`.
+- API key solo en la variable de entorno `GEMINI_API_KEY`. Nunca en el codigo ni en commits; `.env` esta ignorado.
+- Ejecutar desde la raiz: `python 04-tts/tts.py`.
+
+## Git
+- Un commit por **episodio** de aprendizaje: `feat:` concepto aplicado, `docs:` apuntes, `fix:` correccion.
+- Si un script no se pudo verificar, dilo en el mensaje del commit.
+
+## Entorno
+- Windows, PowerShell, Python 3.13, `google-genai` 3.2.0 (Interactions API: `client.interactions.create(model=..., input=...)`).
+- El SDK 3.2.0 lanza excepciones propias con el codigo HTTP en `e.status_code` (no `errors.ClientError`).
+- `interaction.output_text`, `output_image` y `output_audio` existen en este SDK.
+
+## Estado verificado (2026-11-12)
+- Verificado: imagen en Base64 + audio subido con `client.files.upload()` en una misma peticion; reintento con backoff ante 503; TTS de uno y de dos hablantes (WAV 24 kHz mono, escuchado: no).
+- Audio por URL directa dio 400 `invalid_request`; **causa no confirmada**.
+- **No verificado:** `03-generacion-imagen/imagen_generada.py` (la llamada se colgo >10 min); si `response_format` es obligatorio en TTS; que `style` y el idioma suenen como se espera.
+
+## Pendiente de estudiar
+TTS: etiquetas inline y `style`, streaming, formatos de salida, voces (biblioteca extendida, diseno, remix, replica). Musica con Lyria 3.5. Generacion de imagenes: relaciones de aspecto, edicion, referencias.

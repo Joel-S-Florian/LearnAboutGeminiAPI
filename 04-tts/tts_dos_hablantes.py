@@ -3,7 +3,13 @@
 
 import base64
 
+from pathlib import Path
+
 from google import genai
+
+# Carpeta de salidas junto a la raiz del repo (ignorada por git)
+SALIDAS = Path(__file__).resolve().parent.parent / "salidas"
+SALIDAS.mkdir(exist_ok=True)
 
 client = genai.Client(http_options={"api_version": "v1beta"})
 
@@ -48,6 +54,6 @@ interaction = client.interactions.create(
     },
 )
 
-with open("out_dialogo.wav", "wb") as f:
+with open(SALIDAS / "out_dialogo.wav", "wb") as f:
     f.write(base64.b64decode(interaction.output_audio.data))
-print("Audio guardado en out_dialogo.wav")
+print("Audio guardado en salidas/out_dialogo.wav")

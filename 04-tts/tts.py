@@ -4,7 +4,13 @@
 
 import base64
 
+from pathlib import Path
+
 from google import genai
+
+# Carpeta de salidas junto a la raiz del repo (ignorada por git)
+SALIDAS = Path(__file__).resolve().parent.parent / "salidas"
+SALIDAS.mkdir(exist_ok=True)
 
 # La documentacion de TTS usa la version v1beta de la API, por eso la pedimos
 client = genai.Client(http_options={"api_version": "v1beta"})
@@ -34,6 +40,6 @@ interaction = client.interactions.create(
 
 # output_audio devuelve el ultimo bloque de audio; viene en Base64.
 # En peticiones normales (sin stream) llega como WAV completo, asi que se guarda directo
-with open("out.wav", "wb") as f:
+with open(SALIDAS / "out.wav", "wb") as f:
     f.write(base64.b64decode(interaction.output_audio.data))
-print("Audio guardado en out.wav")
+print("Audio guardado en salidas/out.wav")

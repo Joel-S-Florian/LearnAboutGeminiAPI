@@ -4,7 +4,13 @@
 
 import base64
 
+from pathlib import Path
+
 from google import genai
+
+# Carpeta de salidas junto a la raiz del repo (ignorada por git)
+SALIDAS = Path(__file__).resolve().parent.parent / "salidas"
+SALIDAS.mkdir(exist_ok=True)
 
 # Igual que antes: el SDK busca la variable de entorno GEMINI_API_KEY
 client = genai.Client()
@@ -26,6 +32,6 @@ if imagen is None:
     print(interaction.output_text)
 else:
     # b64decode: Base64 (str) -> bytes. "wb" = escribir en modo binario
-    with open("generated_image.png", "wb") as f:
+    with open(SALIDAS / "generated_image.png", "wb") as f:
         f.write(base64.b64decode(imagen.data))
-    print("Imagen guardada en generated_image.png")
+    print("Imagen guardada en salidas/generated_image.png")
