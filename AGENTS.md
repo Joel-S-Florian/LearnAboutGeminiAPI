@@ -48,4 +48,5 @@ Ultima actualizacion: 2026-11-12.
 - **Hecho:** 01 primera llamada · 02 imagen + audio en una peticion (con reintentos) · 04 TTS de uno y de dos hablantes.
 - **En curso: 04-tts.** Faltan los subtemas: etiquetas inline (`<short pause>`) frente a `style`, streaming, formatos de salida (`audio/l16`, mulaw, alaw), voces (biblioteca extendida, diseno, remix, replica) y escribir `manual-tts.md`. **Siguiente paso: etiquetas inline y `style`**, empezando por probar una frase en espanol con Kore.
 - **Por verificar:** `03-generacion-imagen` (se colgo; reintentar con un `timeout` en la llamada); si `response_format` es obligatorio en TTS; escuchar los WAV de `salidas/`.
+- **Orden acordado:** terminar TTS -> Lyria 3.5 (generar musica) -> seccion **7. Use structured output** de https://aistudio.google.com/docs/get-started (y seguir esa guia en orden).
 - **Por estudiar despues:** musica con Lyria 3.5 (clip y cancion completa, letras, imagen a musica); generacion de imagenes: relaciones de aspecto, edicion, referencias.
