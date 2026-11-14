@@ -1,0 +1,7 @@
+Notas de estudio de Joel sobre la API de Gemini.
+
+El cliente se crea con genai.Client(). La clave se lee de la variable de entorno GEMINI_API_KEY.
+Para generar voz se usa el modelo gemini-3.8-flash-tts con la version de API v1beta.
+El proyecto de ejemplo se llama LearnAboutGeminiAPI y vive en GitHub.
+La palabra secreta del experimento de File Search es "mangu".
+Las llamadas colgadas se evitan poniendo un timeout en milisegundos en http_options.
