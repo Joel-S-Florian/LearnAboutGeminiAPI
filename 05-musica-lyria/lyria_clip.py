@@ -14,7 +14,9 @@ SALIDAS.mkdir(exist_ok=True)
 # Los modelos de Lyria solo existen en la version v1beta de la API. Con la version por
 # defecto da 404 "model not found" (comprobado: models.list() daba 28 modelos sin Lyria;
 # con v1beta da 64, incluidos lyria-3-clip-preview y lyria-3.5)
-client = genai.Client(http_options={"api_version": "v1beta"})
+# timeout en milisegundos (5 min): la llamada anterior se colgo ~9 h 40 min sin responder.
+# Comprobado: interactions respeta el timeout y lanza APITimeoutError al vencer
+client = genai.Client(http_options={"api_version": "v1beta", "timeout": 300_000})
 
 interaction = client.interactions.create(
     model="lyria-3-clip-preview",
