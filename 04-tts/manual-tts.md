@@ -51,6 +51,9 @@ Sin stream el audio llega como WAV. Con `response_format={"type": "audio", "mime
 
 Un reproductor normal no abre los crudos; habria que convertirlos a WAV.
 
+## `response_format` no es obligatorio
+En `tts_sin_response_format.py` se quito `response_format={"type": "audio"}` y la peticion funciono igual (WAV de 24 kHz). Los demas scripts lo mantienen por claridad.
+
 ## Voces
 - 30 voces predefinidas (Kore, Puck...). Otras formas: biblioteca extendida, diseno de voz, replica y remix.
 - `client.voices.list(language_code=[...], gender=[...], pitch=[...], contexts=[...], type_=[...], search=..., page_size=...)` (`tts_voces.py`) **solo consulta**. Dentro de un filtro de lista es "O"; entre filtros distintos, "Y".

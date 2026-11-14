@@ -101,6 +101,7 @@ Reglas de esta bitacora:
 - **Diseno de voz** (`voices.create(voice={"type": "prompted", "prompted": {"input": ...}}, store=True)`): funciona en el nivel gratuito. **Remix** (`prompted.base_voice`): `403 PERMISSION_DENIED "Voice edit and remix requires Paid Quota Tier 1 or higher."`.
 - **`voices.delete(id=)` con `voices/voice_abc` da 404 y la voz SIGUE guardada** (el SDK ya antepone `voices/`). Usar el id desnudo `voice_abc`. Comprobar siempre con `voices.list(type_=["prompted"])` que no quedan voces huerfanas (cuentan para el maximo del proyecto y caducan solo tras 1 ano sin uso).
 - Una voz guardada trae `expire_time` a 1 ano vista (medido).
+- **`response_format={"type": "audio"}` NO es obligatorio en TTS:** sin el, la peticion funciona igual (`completed`, `audio/wav`, 24 kHz, 1,8 s para "Have a wonderful day!"). Los scripts de 04-tts lo ponen "por si acaso".
 
 ## Archivos y audio
 - Audio por URL directa dio `400 invalid_request` (causa **no confirmada**). Subirlo con `client.files.upload()` y usar el `uri` si funciona.

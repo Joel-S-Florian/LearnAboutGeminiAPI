@@ -40,7 +40,7 @@ Temas actuales: ver la tabla del `README.md`. Un tema nuevo = carpeta nueva con 
 
 ## Estado verificado (2026-11-14)
 - Verificado ejecutando: imagen en Base64 + audio con `files.upload()`; backoff ante 503; TTS (un hablante, dos, etiquetas, streaming, formatos, voces); salida estructurada (cinco ejemplos); herramientas `google_search` (con `v1beta` y modelo 2.5), `code_execution`, `url_context`; function calling completo (seccion 9, 17 subtemas); MCP remoto; streaming de llamadas.
-- **No verificado / fallo:** `03-generacion-imagen` (se colgo; limite 0/0 en el nivel gratuito); Lyria (limite 0/0); `google_maps` (429, limite 0/0); `file_search` (indexa pero el modelo no recupera, causa desconocida); `google_search` + funcion propia (cuota); el `400` de esquemas complejos (no se reprodujo); audios de `salidas/` (formato y duracion comprobados, **no escuchados**); `response_format` obligatorio en TTS; audio por URL directa (400, causa no confirmada).
+- **No verificado / fallo:** `03-generacion-imagen` (se colgo; limite 0/0 en el nivel gratuito); Lyria (limite 0/0); `google_maps` (429, limite 0/0); `file_search` (indexa pero el modelo no recupera, causa desconocida); `google_search` + funcion propia (cuota); el `400` de esquemas complejos (no se reprodujo); audios de `salidas/` (formato y duracion comprobados, **no escuchados**); audio por URL directa (400, causa no confirmada).
 - **Lecciones y trampas** (con fecha y evidencia): ver `BITACORA.md`.
 
 ## Donde vamos (actualizar al cerrar cada sesion)
@@ -51,7 +51,7 @@ Ultima actualizacion: 2026-11-14.
 - **Patrones del repo:** lista de modelos con respaldo (el primero que responde), `timeout` en milisegundos en `http_options`, y `v1beta` para `google_search`, TTS y Lyria.
 - **Cuota (nivel gratuito, ver `rate_limit/*.json`, local, no versionado):** modelos flash normales 20 peticiones/dia, los "lite" 500/dia; Lyria, imagen y Maps con limite 0/0. Cuota por **proyecto**, no por clave.
 - **Pendiente de Lyria/imagen:** `05-musica-lyria/lyria_clip.py` y `03-generacion-imagen`: sin resultado (se colgaron; limite 0/0). Necesitan facturacion para probarse.
-- **Pendiente de TTS:** diseno, remix y replica de voces (crean recursos guardados: hasta 200, con caducidad); voces latinoamericanas; comprobar que el `id` de una voz sirve en `speech_config`.
+- **TTS (hecho el 2026-11-14):** voces latinoamericanas = `es-419` (86 voces, acento Argentina/Mexico); el `id` de una voz de la biblioteca sirve en `speech_config`; diseno de voz funciona (borrar con el id DESNUDO); `response_format` NO es obligatorio. **Pendiente:** remix (403: exige plan de pago, Tier 1), replica (exige grabaciones y consentimiento de una persona) y **escuchar los WAV de `salidas/`** (solo se comprobo formato y duracion).
 - **Pendiente de herramientas:** `file_search` (no recupera); `google_maps` (cuota); bucle completo de `computer_use` con Playwright; salida estructurada + herramientas (`06-salida-estructurada/herramientas.py`, sin verificar).
 - **Agentes (carpeta 09):** todo lo que crea recursos (agentes guardados, triggers) se borra al final del script (`try/finally`). Cada ejecucion cuesta ~5K tokens de base y la cuota gratuita de Antigravity es 100K tokens/minuto: espaciar y poner `max_total_tokens`. Pendientes sin verificar: fuentes `repository`/`gcs`, credenciales guardadas, hooks, actualizar un agente, PDF/audio/video como entrada.
 - **Idea pendiente:** dos claves en el `.env` con cambio automatico solo ante 429.
