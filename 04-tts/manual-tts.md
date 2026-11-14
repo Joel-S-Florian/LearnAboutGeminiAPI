@@ -54,5 +54,18 @@ Un reproductor normal no abre los crudos; habria que convertirlos a WAV.
 ## Voces
 - 30 voces predefinidas (Kore, Puck...). Otras formas: biblioteca extendida, diseno de voz, replica y remix.
 - `client.voices.list(language_code=[...], gender=[...], pitch=[...], contexts=[...], type_=[...], search=..., page_size=...)` (`tts_voces.py`) **solo consulta**. Dentro de un filtro de lista es "O"; entre filtros distintos, "Y".
-- Prueba: con `language_code` de es-DO, es-MX, es-US y es-ES llegaron 22 voces, todas es-ES. **No verificado** si hay voces latinoamericanas bajo otros codigos ni si el `id` de la voz sirve como `voice` en `speech_config`.
-- Diseno, replica y remix **crean recursos guardados** en el proyecto (hasta 200, con caducidad). Pendiente de estudiar.
+- **Voces latinoamericanas (`tts_voces_latam.py`, solo consulta):** el catalogo tiene **2 114 voces en 39 idiomas**. El espanol de Latinoamerica esta bajo **`es-419`** (419 = codigo de region de las Naciones Unidas para Latinoamerica): **86 voces**, con acento **Argentina (53)** y **Mexico (33)**; no hay dominicano ni colombiano. Mi filtro anterior (es-DO/MX/US) no encontraba nada porque ese codigo no existe. Tambien hay 22 voces `es-ES` ("Castilian Spanish"). Los nombres son de rol: `es-419-concierge-2`, `es-419-advisor-1`, `es-419-commercial-4`...
+- **El `id` de una voz de la biblioteca SIRVE como `voice` en `speech_config`** (`tts_voces_propias.py`): `es-419-concierge-2` -> WAV de 5,6 s, 24 kHz, mono. (Se verifico el formato, **no se escucho**.)
+
+### Disenar, remezclar y replicar voces (`tts_voces_propias.py`)
+
+Se crean con `client.voices.create(voice={...}, store=True)`; `store=True` es **obligatorio** para voces `prompted`. La voz guardada devuelve un `id` (`voice_...`) que se usa como `voice` en `speech_config`; caduca **1 ano despues del ultimo uso** (medido: `expire_time` a 1 ano) y cada proyecto tiene un maximo de voces activas.
+
+| Tipo | Como se crea | Resultado medido |
+| :--- | :--- | :--- |
+| **Diseno** | `{"type": "prompted", "language_code": "es-419", "prompted": {"input": "<descripcion de la voz>"}}` | **funciono**: "mujer calida y tranquila con acento dominicano del Caribe" -> voz `voice_...` y WAV de 6,5 s |
+| **Remix** | igual, con `prompted.base_voice` (nombre de una voz predefinida, p. ej. `Kore`, o id de una voz propia); el `input` describe cambios **relativos** | **403 `PERMISSION_DENIED`: "Voice edit and remix requires Paid Quota Tier 1 or higher."** (solo plan de pago) |
+| **Replica** | `{"type": "replicated", "replicated": {"consent_audio": ...}}` + `sample_audio` | **no probado**: exige grabaciones de referencia y de consentimiento de una persona |
+
+- `voices.get(id=...)`, `voices.list(type_=["prompted"])` y `voices.delete(id=...)` funcionan. **`delete` quiere el id DESNUDO** (`voice_abc123`): con `voices/voice_abc123` da **404** y la voz se queda guardada (me paso la primera vez; la borre despues y `list` quedo en `[]`).
+- Que la voz disenada **suene dominicana** no se pudo comprobar (no se escucha desde aqui): solo se sabe que se creo y que el audio se genero.

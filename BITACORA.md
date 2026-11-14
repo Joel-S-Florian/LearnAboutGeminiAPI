@@ -95,6 +95,13 @@ Reglas de esta bitacora:
 - `cancel` -> `cancelled` (salida parcial 0 caracteres); tras `delete`, `get` -> `404 NotFoundError`; `cancel` sobre una interaccion ya completada **no da error** (sigue `completed`); `delete` de un id mal formado (`v1_noexiste`) -> `400`, no 404.
 - Retencion segun la doc: plan gratuito 1 dia, de pago 55 (configurable). Los scripts borran sus interacciones al final.
 
+## Voces de TTS (2026-11-14)
+- **El espanol latinoamericano esta bajo `language_code="es-419"`** (UN M.49: 419 = Latinoamerica), no bajo `es-MX`/`es-DO`/`es-US`: filtrar por esos codigos solo devolvia las 22 voces `es-ES`. En el catalogo completo (2 114 voces, 39 idiomas): `es-419` = 86 voces (acento Argentina 53, Mexico 33); `es-ES` = 22. Para explorar un catalogo desconocido: paginar con `page_size=1000` y contar `language_code`/`accent`/`region_code`, en vez de adivinar codigos.
+- El `id` de una voz de la biblioteca (`es-419-concierge-2`) funciona como `voice` en `speech_config`.
+- **Diseno de voz** (`voices.create(voice={"type": "prompted", "prompted": {"input": ...}}, store=True)`): funciona en el nivel gratuito. **Remix** (`prompted.base_voice`): `403 PERMISSION_DENIED "Voice edit and remix requires Paid Quota Tier 1 or higher."`.
+- **`voices.delete(id=)` con `voices/voice_abc` da 404 y la voz SIGUE guardada** (el SDK ya antepone `voices/`). Usar el id desnudo `voice_abc`. Comprobar siempre con `voices.list(type_=["prompted"])` que no quedan voces huerfanas (cuentan para el maximo del proyecto y caducan solo tras 1 ano sin uso).
+- Una voz guardada trae `expire_time` a 1 ano vista (medido).
+
 ## Archivos y audio
 - Audio por URL directa dio `400 invalid_request` (causa **no confirmada**). Subirlo con `client.files.upload()` y usar el `uri` si funciona.
 - TTS y Lyria requieren `v1beta`.
