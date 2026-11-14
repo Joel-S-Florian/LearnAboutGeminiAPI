@@ -16,8 +16,8 @@ MODELOS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash-l
 
 client = genai.Client(http_options={"timeout": 90_000})
 
-# OJO: NO pasar embedding_model="models/gemini-embedding-2": con ese modelo el store indexa pero la
-# busqueda no recupera nada (medido 2026-11-14, ver file_search_diagnostico.py). Con el de por defecto funciona.
+# OJO: con embedding_model="models/gemini-embedding-2" la recuperacion es ERRATICA con preguntas en espanol (fiable en
+# ingles); con el embedding por defecto (001) funciona (medido 2026-11-14; ver BITACORA, entrada de T2.5).
 store = client.file_search_stores.create(config={"display_name": "notas-joel"})
 print("Store creado:", store.name)
 
