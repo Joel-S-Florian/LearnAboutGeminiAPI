@@ -19,7 +19,9 @@ Una carpeta por tema, en orden de estudio. Cada una trae sus scripts comentados 
 | `01-primera-llamada/` | Primera llamada a la API (`generate_content`) |
 | `02-multimodal-entendimiento/` | Entender imagen + audio en una sola petición, reintentos con backoff |
 | `03-generacion-imagen/` | Generar imágenes (sin verificar) |
-| `04-tts/` | Texto a voz: uno y dos hablantes |
+| `04-tts/` | Texto a voz: uno y dos hablantes, etiquetas, streaming, formatos, voces |
+| `05-musica-lyria/` | Música con Lyria (sin verificar: la llamada se colgó) |
+| `06-salida-estructurada/` | JSON con esquema (Pydantic): anidado, `Union`/`Literal`, recursivo, streaming |
 
 Otras carpetas: `assets/` (archivos de entrada), `salidas/` y `_borradores/` (ignoradas por git). Las reglas para trabajar en el repo están en `AGENTS.md`.
 

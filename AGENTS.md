@@ -43,11 +43,12 @@ Temas actuales: ver la tabla del `README.md`. Un tema nuevo = carpeta nueva con 
 - **No verificado:** `03-generacion-imagen/imagen_generada.py` (la llamada se colgo >10 min); si `response_format` es obligatorio en TTS; que `style` y el idioma suenen como se espera.
 
 ## Donde vamos (actualizar al cerrar cada sesion)
-Ultima actualizacion: 2026-11-13.
+Ultima actualizacion: 2026-11-14.
 
-- **Hecho:** 01 primera llamada · 02 imagen + audio en una peticion (con reintentos) · 04 TTS: un hablante, dos hablantes, etiquetas y `style`, streaming, formatos de salida, `voices.list()` (apunte: `04-tts/manual-tts.md`).
-- **En curso: 05 Lyria 3.5 (generar musica).** `05-musica-lyria/lyria_clip.py`. Los modelos Lyria dieron 404 con la version de API por defecto; **hay que usar `http_options={"api_version": "v1beta"}`** (con v1beta, `models.list()` pasa de 28 a 64 modelos e incluye Lyria). Leccion general: si un modelo de la doc da 404, probar v1beta antes de culpar a la cuenta.
-- **Siguiente: seccion 7 "Use structured output"** de https://aistudio.google.com/docs/get-started.
+- **Hecho:** 01 primera llamada · 02 imagen + audio en una peticion (con reintentos) · 04 TTS: un hablante, dos hablantes, etiquetas y `style`, streaming, formatos de salida, `voices.list()` (apunte: `04-tts/manual-tts.md`) · 06 salida estructurada: receta basica, anidada, moderacion (`Union`/`Literal`), recursiva y streaming (apunte: `06-salida-estructurada/manual-salida-estructurada.md`).
+- **Pendiente: 05 Lyria 3.5 (generar musica).** `05-musica-lyria/lyria_clip.py`. Los modelos Lyria dieron 404 con la version de API por defecto; **hay que usar `http_options={"api_version": "v1beta"}`** (con v1beta, `models.list()` pasa de 28 a 64 modelos e incluye Lyria). Leccion general: si un modelo de la doc da 404, probar v1beta antes de culpar a la cuenta. Con v1beta la llamada **se colgo ~9 h 40 min sin responder** (22:32 del 2026-11-13) y se detuvo a mano: no hay MP3; reintentar con un `timeout`.
+- **Siguiente: salida estructurada con herramientas** (Google Search, URL Context...; preview) y despues seguir la guia get-started en orden desde la seccion 8.
+- **Leccion de streaming:** filtrar los eventos por `delta.type` (`"text"`, `"audio"`), no por atributos: hay deltas `thought_signature` sin `.text`.
 - **Pendiente de TTS:** diseno, remix y replica de voces (crean recursos guardados en el proyecto: hasta 200, con caducidad); buscar voces latinoamericanas con `search`/`accent`; comprobar que el `id` de una voz de la biblioteca sirve en `speech_config`.
 - **Por verificar:** `03-generacion-imagen` (se colgo; reintentar con un `timeout` en la llamada); si `response_format` es obligatorio en TTS; escuchar los WAV de `salidas/`.
 - **Orden acordado:** terminar TTS -> Lyria 3.5 (generar musica) -> seccion **7. Use structured output** de https://aistudio.google.com/docs/get-started (y seguir esa guia en orden).
