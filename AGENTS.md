@@ -38,19 +38,20 @@ Temas actuales: ver la tabla del `README.md`. Un tema nuevo = carpeta nueva con 
 - El SDK 3.2.0 lanza excepciones propias con el codigo HTTP en `e.status_code` (no `errors.ClientError`).
 - `interaction.output_text`, `output_image` y `output_audio` existen en este SDK.
 
-## Estado verificado (2026-11-12)
-- Verificado: imagen en Base64 + audio subido con `client.files.upload()` en una misma peticion; reintento con backoff ante 503; TTS de uno y de dos hablantes (WAV 24 kHz mono, escuchado: no).
-- Audio por URL directa dio 400 `invalid_request`; **causa no confirmada**.
-- **No verificado:** `03-generacion-imagen/imagen_generada.py` (la llamada se colgo >10 min); si `response_format` es obligatorio en TTS; que `style` y el idioma suenen como se espera.
+## Estado verificado (2026-11-14)
+- Verificado ejecutando: imagen en Base64 + audio con `files.upload()`; backoff ante 503; TTS (un hablante, dos, etiquetas, streaming, formatos, voces); salida estructurada (cinco ejemplos); herramientas `google_search` (con `v1beta` y modelo 2.5), `code_execution`, `url_context`; function calling completo (seccion 9, 17 subtemas); MCP remoto; streaming de llamadas.
+- **No verificado / fallo:** `03-generacion-imagen` (se colgo; limite 0/0 en el nivel gratuito); Lyria (limite 0/0); `google_maps` (429, limite 0/0); `file_search` (indexa pero el modelo no recupera, causa desconocida); `google_search` + funcion propia (cuota); el `400` de esquemas complejos (no se reprodujo); audios de `salidas/` (formato y duracion comprobados, **no escuchados**); `response_format` obligatorio en TTS; audio por URL directa (400, causa no confirmada).
+- **Lecciones y trampas** (con fecha y evidencia): ver `BITACORA.md`.
 
 ## Donde vamos (actualizar al cerrar cada sesion)
 Ultima actualizacion: 2026-11-14.
 
-- **Hecho:** 01 primera llamada · 02 imagen + audio en una peticion (con reintentos) · 04 TTS: un hablante, dos hablantes, etiquetas y `style`, streaming, formatos de salida, `voices.list()` (apunte: `04-tts/manual-tts.md`) · 06 salida estructurada: receta basica, anidada, moderacion (`Union`/`Literal`), recursiva y streaming (apunte: `06-salida-estructurada/manual-salida-estructurada.md`).
-- **Pendiente: 05 Lyria 3.5 (generar musica).** `05-musica-lyria/lyria_clip.py`. Los modelos Lyria dieron 404 con la version de API por defecto; **hay que usar `http_options={"api_version": "v1beta"}`** (con v1beta, `models.list()` pasa de 28 a 64 modelos e incluye Lyria). Leccion general: si un modelo de la doc da 404, probar v1beta antes de culpar a la cuenta. Con v1beta la llamada **se colgo ~9 h 40 min sin responder** (22:32 del 2026-11-13) y se detuvo a mano: no hay MP3; reintentar con un `timeout`.
-- **Siguiente: salida estructurada con herramientas** (Google Search, URL Context...; preview) y despues seguir la guia get-started en orden desde la seccion 8.
-- **Leccion de streaming:** filtrar los eventos por `delta.type` (`"text"`, `"audio"`), no por atributos: hay deltas `thought_signature` sin `.text`.
-- **Pendiente de TTS:** diseno, remix y replica de voces (crean recursos guardados en el proyecto: hasta 200, con caducidad); buscar voces latinoamericanas con `search`/`accent`; comprobar que el `id` de una voz de la biblioteca sirve en `speech_config`.
-- **Por verificar:** `03-generacion-imagen` (se colgo; reintentar con un `timeout` en la llamada); si `response_format` es obligatorio en TTS; escuchar los WAV de `salidas/`.
-- **Orden acordado:** terminar TTS -> Lyria 3.5 (generar musica) -> seccion **7. Use structured output** de https://aistudio.google.com/docs/get-started (y seguir esa guia en orden).
-- **Por estudiar despues:** musica con Lyria 3.5 (clip y cancion completa, letras, imagen a musica); generacion de imagenes: relaciones de aspecto, edicion, referencias.
+- **Guia en orden** (https://aistudio.google.com/docs/get-started; el contenido de cada seccion lo pega Joel o esta en `Others/`): hechas la 6 (imagen, TTS, Lyria: ver pendientes), 7 (salida estructurada), 8 (herramientas) y 9 (funciones propias). **Siguiente: seccion 10, "Run a managed agent"** (`Others/10 - Run a managed agent`).
+- **Hecho:** 01 primera llamada · 02 imagen + audio (con reintentos) · 04 TTS (`manual-tts.md`) · 06 salida estructurada (`manual-salida-estructurada.md`) · 07 herramientas: `google_search`, `code_execution`, `url_context`, `file_search`, `google_maps`, `computer_use` · 08 funciones propias: 17 subtemas (bucle, casos de uso, cuatro pasos, stateless, paralelo, composicional, modos, multi-tool, multimodal, URI, MCP, streaming, esquema, buenas practicas, texto antes de herramienta, esquemas complejos).
+- **Patrones del repo:** lista de modelos con respaldo (el primero que responde), `timeout` en milisegundos en `http_options`, y `v1beta` para `google_search`, TTS y Lyria.
+- **Cuota (nivel gratuito, ver `rate_limit/*.json`, local, no versionado):** modelos flash normales 20 peticiones/dia, los "lite" 500/dia; Lyria, imagen y Maps con limite 0/0. Cuota por **proyecto**, no por clave.
+- **Pendiente de Lyria/imagen:** `05-musica-lyria/lyria_clip.py` y `03-generacion-imagen`: sin resultado (se colgaron; limite 0/0). Necesitan facturacion para probarse.
+- **Pendiente de TTS:** diseno, remix y replica de voces (crean recursos guardados: hasta 200, con caducidad); voces latinoamericanas; comprobar que el `id` de una voz sirve en `speech_config`.
+- **Pendiente de herramientas:** `file_search` (no recupera); `google_maps` (cuota); bucle completo de `computer_use` con Playwright; salida estructurada + herramientas (`06-salida-estructurada/herramientas.py`, sin verificar).
+- **Idea pendiente:** dos claves en el `.env` con cambio automatico solo ante 429.
+- **Leccion de streaming:** filtrar por `delta.type`; en llamadas a funciones el tipo real es `arguments_delta` (la doc de Python dice `arguments`). Detalle en `BITACORA.md`.
