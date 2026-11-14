@@ -46,7 +46,8 @@ Temas actuales: ver la tabla del `README.md`. Un tema nuevo = carpeta nueva con 
 Ultima actualizacion: 2026-11-13.
 
 - **Hecho:** 01 primera llamada · 02 imagen + audio en una peticion (con reintentos) · 04 TTS: un hablante, dos hablantes, etiquetas y `style`, streaming, formatos de salida, `voices.list()` (apunte: `04-tts/manual-tts.md`).
-- **En curso: 05 Lyria 3.5 (generar musica).** Carpeta `05-musica-lyria/` por crear.
+- **En curso: 05 Lyria 3.5 (generar musica).** `05-musica-lyria/lyria_clip.py`. Los modelos Lyria dieron 404 con la version de API por defecto; **hay que usar `http_options={"api_version": "v1beta"}`** (con v1beta, `models.list()` pasa de 28 a 64 modelos e incluye Lyria). Leccion general: si un modelo de la doc da 404, probar v1beta antes de culpar a la cuenta.
+- **Siguiente: seccion 7 "Use structured output"** de https://aistudio.google.com/docs/get-started.
 - **Pendiente de TTS:** diseno, remix y replica de voces (crean recursos guardados en el proyecto: hasta 200, con caducidad); buscar voces latinoamericanas con `search`/`accent`; comprobar que el `id` de una voz de la biblioteca sirve en `speech_config`.
 - **Por verificar:** `03-generacion-imagen` (se colgo; reintentar con un `timeout` en la llamada); si `response_format` es obligatorio en TTS; escuchar los WAV de `salidas/`.
 - **Orden acordado:** terminar TTS -> Lyria 3.5 (generar musica) -> seccion **7. Use structured output** de https://aistudio.google.com/docs/get-started (y seguir esa guia en orden).
