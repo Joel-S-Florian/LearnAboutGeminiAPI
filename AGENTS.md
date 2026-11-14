@@ -9,6 +9,7 @@ Repositorio de aprendizaje personal de Joel (estudiante de ingenieria de softwar
 - **No hagas commit ni push** hasta que Joel lo pida; son dos pasos separados.
 - Un tema a la vez: tema y subtemas, sin saltar.
 - Al cerrar cada sesion, actualiza la seccion "Donde vamos" de este archivo.
+- Anota en `BITACORA.md` cada leccion verificada ("si X falla, pasa Y") apenas ocurra, con fecha; lo supuesto va como "no verificado".
 
 ## Estructura
 ```
