@@ -22,6 +22,11 @@ Una carpeta por tema, en orden de estudio. Cada una trae sus scripts comentados 
 | `04-tts/` | Texto a voz: uno y dos hablantes, etiquetas, streaming, formatos, voces |
 | `05-musica-lyria/` | Música con Lyria (sin verificar: la llamada se colgó) |
 | `06-salida-estructurada/` | JSON con esquema (Pydantic): anidado, `Union`/`Literal`, recursivo, streaming |
+| `07-herramientas/` | Herramientas integradas: `google_search`, `code_execution`, `url_context`, `file_search`, `google_maps`, `computer_use` |
+| `08-funciones-propias/` | Function calling: bucle, stateless, paralelo, composicional, modos, multi-tool, multimodal, MCP, streaming, buenas prácticas |
+| `09-agentes-gestionados/` | Agentes gestionados (Antigravity): sandbox remoto, multi-turno, MCP, presupuesto, agentes guardados, red, triggers (apunte: `manual-agentes.md`) |
+
+Los problemas encontrados y sus causas (o "no verificado") están en [`BITACORA.md`](BITACORA.md).
 
 Otras carpetas: `assets/` (archivos de entrada), `salidas/` y `_borradores/` (ignoradas por git). Las reglas para trabajar en el repo están en `AGENTS.md`.
 
@@ -29,6 +34,7 @@ Otras carpetas: `assets/` (archivos de entrada), `salidas/` y `_borradores/` (ig
 
 - Python 3.10 o superior
 - Una API Key de Gemini obtenida en [Google AI Studio](https://aistudio.google.com/)
+- Algunos scripts usan librerías extra: `matplotlib` (gráfico de `08-funciones-propias/crear_grafico.py`) y `requests` (descarga del entorno de un agente en `09-agentes-gestionados/descargar_entorno.py`).
 
 ## Uso general
 
