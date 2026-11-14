@@ -25,6 +25,7 @@ Una carpeta por tema, en orden de estudio. Cada una trae sus scripts comentados 
 | `07-herramientas/` | Herramientas integradas: `google_search`, `code_execution`, `url_context`, `file_search`, `google_maps`, `computer_use` |
 | `08-funciones-propias/` | Function calling: bucle, stateless, paralelo, composicional, modos, multi-tool, multimodal, MCP, streaming, buenas prácticas |
 | `09-agentes-gestionados/` | Agentes gestionados (Antigravity): sandbox remoto, multi-turno, MCP, presupuesto, agentes guardados, red, triggers (apunte: `manual-agentes.md`) |
+| `10-segundo-plano/` | `background=True` con modelos normales: polling, estados, streaming con reconexión, encadenar, cancelar y borrar (apunte: `manual-segundo-plano.md`) |
 
 Los problemas encontrados y sus causas (o "no verificado") están en [`BITACORA.md`](BITACORA.md).
 

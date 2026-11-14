@@ -88,6 +88,13 @@ Reglas de esta bitacora:
 - Que las herramientas de archivos aparezcan como `function_call` con `function_result` automatico (segun la doc) **no lo he verificado por nombre**: en esta ejecucion el unico paso fue `get_weather`.
 - Al recortar la salida con `Select-Object -Last N`, los metadatos impresos AL PRINCIPIO se pierden: imprimirlos al final.
 
+## Segundo plano con modelos normales (2026-11-14, `gemini-3.5-flash-lite`)
+- `create(model=..., background=True)` vuelve en **~5 s** (no instantaneo) con `status: "in_progress"`; polling con `get(id=)`: `['in_progress', 'completed']` en 8 s para un ensayo de ~400 palabras. Funciona con un modelo lite aunque la doc solo lista `gemini-4-*` y `gemini-3.8-flash`.
+- `background=True` + `store=False` -> `400 "store=true is required for background interactions."`. Encadenar `previous_interaction_id` a una interaccion **en curso** -> `400 "Previous interaction is not yet complete."` (tras completarse, funciona). Ambos como dice la doc.
+- **Streaming con reconexion:** `get(id=, stream=True, last_event_id=<id>)` retoma sin huecos ni repetidos (parte1 + parte2 == texto final). **El texto llega en pocos trozos grandes (~1 500 caracteres cada uno)**: un corte "tras 5 trozos" nunca ocurrio (el stream acabo antes) y la primera prueba fue inconcluyente; cortar tras 2 trozos si probo la reconexion. Leccion: antes de simular un corte, comprobar cuantos eventos hay de verdad.
+- `cancel` -> `cancelled` (salida parcial 0 caracteres); tras `delete`, `get` -> `404 NotFoundError`; `cancel` sobre una interaccion ya completada **no da error** (sigue `completed`); `delete` de un id mal formado (`v1_noexiste`) -> `400`, no 404.
+- Retencion segun la doc: plan gratuito 1 dia, de pago 55 (configurable). Los scripts borran sus interacciones al final.
+
 ## Archivos y audio
 - Audio por URL directa dio `400 invalid_request` (causa **no confirmada**). Subirlo con `client.files.upload()` y usar el `uri` si funciona.
 - TTS y Lyria requieren `v1beta`.
