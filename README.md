@@ -26,6 +26,7 @@ Una carpeta por tema, en orden de estudio. Cada una trae sus scripts comentados 
 | `08-funciones-propias/` | Function calling: bucle, stateless, paralelo, composicional, modos, multi-tool, multimodal, MCP, streaming, buenas prácticas |
 | `09-agentes-gestionados/` | Agentes gestionados (Antigravity): sandbox remoto, multi-turno, MCP, presupuesto, agentes guardados, red, triggers (apunte: `manual-agentes.md`) |
 | `10-segundo-plano/` | `background=True` con modelos normales: polling, estados, streaming con reconexión, encadenar, cancelar y borrar (apunte: `manual-segundo-plano.md`) |
+| `11-optimizacion/` | Optimizacion de costes y latencia: cache de contexto implicito, niveles de servicio, Batch API, webhooks y video agentico (apunte: capitulo 14 de `07-herramientas/manual-herramientas-t1-t7.md`) |
 
 Los problemas encontrados y sus causas (o "no verificado") están en [`BITACORA.md`](BITACORA.md).
 

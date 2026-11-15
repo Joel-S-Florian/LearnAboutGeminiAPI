@@ -2,6 +2,8 @@
 
 Documento de estudio. Explica la ultima fase del repositorio: la guia **Tools** de AI Studio (`Others/Tools`), que recorrimos en siete temas (T1 a T7). Para cada tema veras **que archivos nuevos se crearon, que hace cada uno, que se descubrio y que quedo sin verificar**.
 
+> **Ampliado:** al final (capitulo 14) se anade la guia **Optimization** (cache, niveles de servicio, Batch, webhooks, video). Sus scripts estan en `11-optimizacion/`.
+
 > Regla del repo que se mantiene aqui: lo que no se comprobo ejecutando se marca como **"no verificado"**. Las cifras (tokens, aciertos) son de una o pocas muestras: sirven para entender, no como estadistica.
 
 ---
@@ -388,3 +390,278 @@ Solo un sondeo: **429 en todos los modelos** (cuota 0/0), y `gemini-2.5-pro` ya 
 - La regla de confirmacion de `computer_use`: repetirla con un ejecutor completo y varias muestras.
 
 Mas detalle (con fechas y los numeros exactos) esta en `BITACORA.md`, en las secciones de herramientas.
+
+---
+
+## 14. Optimization - costes y latencia (guia `Others/Optimization`, carpeta `11-optimizacion/`)
+
+Esta guia no trae herramientas nuevas: trae **formas de pagar menos o de responder mas rapido**. Resumen de lo que ofrece la doc:
+
+| Mecanismo | Idea | Precio segun la doc | Latencia |
+| :--- | :--- | :--- | :--- |
+| **Standard** | El defecto | Precio completo | Segundos |
+| **Flex** (`service_tier="flex"`) | Capacidad "sobrante", sincrona | 50 % menos | 1 a 15 min; puede dar 503 |
+| **Priority** (`service_tier="priority"`) | Cola de maxima prioridad | 75 a 100 % mas | Segundos |
+| **Batch API** | Lotes asincronos | 50 % menos | Hasta 24 h |
+| **Cache de contexto** | Reutilizar un prefijo grande | 90 % menos en los tokens cacheados | Mas rapido el primer token |
+
+> Estado de esta fase (se va ampliando): **O1 cache implicito** y **O2 niveles de servicio** hechos; **O3 Batch** bloqueado por la cuenta (solo teoria), **O4 Webhooks** hecho solo por API y **O5 video agentico** hecho. **Guia Optimization completa.**
+
+### 14.1 Cache de contexto implicito - `11-optimizacion/cache_implicito.py`
+
+**Idea.** Si mandas muchas veces el mismo bloque grande al principio del prompt (por ejemplo el system prompt y las herramientas de un CLI), el servicio puede **reutilizar** ese trabajo y cobrarte menos por esos tokens. En la Interactions API **solo existe el implicito** (automatico); el explicito (crear un objeto de cache con TTL) no esta soportado. Se ve en `usage.total_cached_tokens`.
+
+```mermaid
+flowchart LR
+    P1[Peticion 1: prefijo grande + pregunta A] --> C{Hay prefijo en cache?}
+    C -->|no| F[Procesa todo y guarda el prefijo]
+    P2[Peticion 2: MISMO prefijo + pregunta B] --> C
+    C -->|si| H[Reusa el prefijo: total_cached_tokens alto]
+    P3[Peticion 3: cambia la PRIMERA linea] --> C
+    C -->|prefijo distinto| F
+```
+
+**El script.** Genera una base de texto determinista (220 registros, unos 10 100 tokens) y hace preguntas distintas sobre ella. Prueba: (A) preguntas seguidas y tras 45 s; (B) cambiar la primera linea del prefijo; (C) un prefijo pequeno; (D) conversacion con estado (`previous_interaction_id`). Imprime `total_input_tokens` y `total_cached_tokens`.
+
+**Resultados**
+
+| Modelo | Mismo prefijo, sin estado | Con estado (`previous_interaction_id`) |
+| :--- | :--- | :--- |
+| `gemini-2.5-flash` | 0 % la 1.a vez; **91 %** desde la 2.a (9 195 de 10 111), tambien tras 45 s | ~9 180 tokens (90 %) en los turnos 2, 3 y 4 |
+| `gemini-2.5-flash-lite` | **91 %** desde la 2.a (una prueba) | no probado |
+| `gemini-3.5-flash-lite` | **0 de 13 llamadas** (incluso con 30 mil tokens de prefijo y esperas de 90 s) | turno 2: **6 117** (60 %), turno 3: **8 147** (80 %), turno 4: 8 137 |
+| `gemini-3.8-flash` | sin dato: 2 timeouts de 120 s | no probado |
+
+Otras comprobaciones (con `gemini-2.5-flash`):
+
+- Cambiar la **primera linea** del prefijo -> **0 %**: el cache depende del prefijo, no del contenido suelto.
+- Un prefijo **pequeno** (714 tokens, bajo el minimo de 2 048) -> **0 %**.
+- La cache **nunca cubre el 100 %**: la parte final (la pregunta) se reprocesa.
+- La mejora de latencia fue pequena (2,3 s -> 1,5 s en una muestra).
+
+**Trampas**
+
+1. Que la doc diga "automatico" no significa que **todos los modelos** lo hagan: `gemini-3.5-flash-lite` no cacheo ninguna llamada identica sin estado.
+2. Con ese mismo modelo **si** cachea en una cadena con estado, y los valores salen identicos con bases distintas (6 117, 8 147, 8 137): parece cachear por bloques. **Causa no verificada.**
+3. `gemini-3.8-flash` se cuelga con frecuencia: pon timeouts y no lo uses para probar cache con poca cuota.
+
+**Para tu CLI (conclusion practica).** Pon el system prompt y las definiciones de herramientas **al principio**, no los cambies entre turnos, y encadena con `previous_interaction_id`. Mide siempre `usage.total_cached_tokens` para saber si de verdad ahorras.
+
+**No verificado:** el comportamiento de Gemini 4 (la doc exige 2 050 tokens nuevos por turno para cachear lo anterior) y la factura real (la doc indica 90 % de descuento en los tokens cacheados; aqui solo se midio la cantidad de tokens).
+
+### 14.2 Niveles de servicio (`service_tier`) - `11-optimizacion/niveles_servicio.py` y `_un_caso_tier.py`
+
+**Idea.** Con un solo parametro eliges entre pagar menos esperando mas (**flex**), el defecto (**standard**) o pagar mas por prioridad (**priority**):
+
+```python
+interaction = client.interactions.create(model="gemini-3.5-flash-lite", input="...", service_tier="flex")
+print(interaction.service_tier)   # el nivel que REALMENTE se uso
+```
+
+```mermaid
+flowchart TD
+    A[Pides service_tier] --> B{Cual?}
+    B -->|flex| C[Capacidad sobrante: 50 % menos, puede tardar o dar 503]
+    B -->|standard| D[El defecto]
+    B -->|priority| E{Hay cupo de priority?}
+    E -->|si| F[Cola de maxima prioridad: mas caro]
+    E -->|no| G[Se SIRVE COMO standard, sin error]
+```
+
+**Resultados** (nivel gratuito, 4 modelos: `gemini-3.5-flash-lite`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-3.1-flash-lite`)
+
+| Pides | Se sirve | Observacion |
+| :--- | :--- | :--- |
+| (nada) o `standard` | `standard` | |
+| `flex` | **`flex`** | Aceptado en el nivel gratuito; tambien con `code_execution` |
+| `priority` | **`standard`** (12 de 12) | **Degradacion silenciosa**, sin error |
+| `turbo` | - | 400 con la lista de valores validos |
+
+**Trampas**
+
+1. **Priority baja a standard sin avisar.** Si lo pides y no compruebas `service_tier`, crees que tienes prioridad y no. Por que baja en el nivel gratuito: **no verificado** (la doc solo lo promete al superar limites dinamicos, que son 0,3x los del estandar).
+2. **La cabecera `x-gemini-service-tier` de la doc no existe**: las cabeceras de respuesta no mencionan el nivel. El dato esta **en el cuerpo** (`service_tier`).
+3. **Los tokens no cambian** entre niveles (9 con "Reply OK"): cambia el precio, no el conteo.
+4. **No se vio la espera de 1 a 15 min de Flex** con peticiones diminutas (todas tardaron 3 a 5 s). No se pudo provocar el 503 de falta de capacidad, ni medir el descuento real (solo se miden tokens).
+5. **Una llamada se quedo sin responder mas de 9 minutos** aunque el cliente tenia `timeout` de 45 s. El `timeout` del cliente no es un tope duro: prueba muchas llamadas con **un proceso por caso y `timeout 70` del sistema**.
+
+**Para tu CLI.** `flex` encaja con tareas en segundo plano donde la demora no importa (resumenes, evaluaciones); recuerda lo que pide la doc: **timeouts de 10 minutos o mas, reintentos con espera exponencial, y fallback tuyo a standard** (no es automatico). `priority`, solo con facturacion, y siempre comprobando `service_tier`.
+
+### 14.3 Batch API - `11-optimizacion/_batch_uno.py` (bloqueado en el nivel gratuito)
+
+**Idea.** Mandas muchas peticiones de una vez y las recoges despues, por **50 % del precio** a cambio de esperar (objetivo: 24 h, normalmente mucho menos). Sirve para evaluaciones, preprocesar datasets y embeddings en masa. Importante: **usa el formato `generateContent`, no el de Interactions.**
+
+```mermaid
+flowchart LR
+    A[Lista de peticiones] -->|inline hasta 20 MB| B[client.batches.create]
+    A2[Archivo JSONL hasta 2 GB, con una clave por linea] -->|Files API| B
+    B --> C[Job: batches/ID]
+    C --> D{Estado}
+    D -->|PENDING / RUNNING| D
+    D -->|SUCCEEDED| E[Resultados: inlined_responses o archivo]
+    D -->|FAILED / CANCELLED / EXPIRED| F[Sin resultados]
+```
+
+**Lo que se probo (y es todo lo que se pudo):**
+
+| Intento | Resultado |
+| :--- | :--- |
+| Lote inline en 4 modelos | **400 FAILED_PRECONDITION** "Precondition check failed." |
+| Lote con archivo JSONL | igual |
+| Lote de embeddings (`gemini-embedding-001` y `-2`) | igual |
+| Modelo inexistente | 404 (se mira antes) |
+| Lista vacia, o archivo que no existe | **el mismo FAILED_PRECONDITION** (no un error de validacion) |
+| `batches.list()` | `[]` |
+| `get` / `cancel` / `delete` de un id bien formado pero inexistente | 400 "Could not parse the batch name" |
+
+**Que significa.** El chequeo falla antes de validar la peticion, asi que es una **condicion de la cuenta**. Lo mas probable es que falte **facturacion**, pero **no esta verificado** (el mensaje no lo dice).
+
+**Detalles utiles del SDK**
+
+- `create_embeddings(model=..., src={"inlined_requests": {"contents": [...], "config": ...}})`: el valor es un **objeto** `EmbedContentBatch`, no una lista; una lista da `ValidationError`. El SDK avisa que es experimental.
+- Los nombres de lote tienen la forma `batches/<id>`; sin el prefijo `batches/` el SDK lo rechaza antes de enviar.
+
+**Lo que dice la doc y NO se verifico** (para estudiar):
+
+- Estados: `JOB_STATE_PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `EXPIRED`. Los resultados estan en `dest.inlined_responses` (inline) o `dest.file_name` (archivo, que se baja con `client.files.download`).
+- **La creacion no es idempotente**: enviar dos veces la misma peticion crea dos lotes.
+- En el archivo JSONL cada linea lleva una `key` propia para saber a que peticion corresponde cada resultado; revisa `failedRequestCount` en las estadisticas.
+- Se admiten configuracion por peticion (system instruction, herramientas como `google_search`, salida estructurada) y `cached_content` (si hay acierto de cache pagas la tarifa de cache).
+- **Incoherencia de la propia doc:** un lote `EXPIRED` lo define como "mas de 48 horas" pendiente o en curso, pero el evento de webhook `batch.expired` habla de "24 h", y el objetivo de entrega es 24 h.
+- En vez de sondear, se pueden usar **webhooks** (`batch.succeeded`, `batch.failed`...): es el siguiente tema (14.4).
+
+**Para tu CLI.** Un lote encaja en tareas masivas y no interactivas (por ejemplo evaluar un conjunto de prompts). Cuando tengas facturacion, el sondeo se repite con `python 11-optimizacion/_batch_uno.py crear_inline gemini-3.5-flash-lite` y despues `estado batches/<id>`.
+
+### 14.4 Webhooks - `11-optimizacion/webhooks_api.py` (solo la parte de API)
+
+**Idea.** En vez de sondear "ya termino?" cada pocos segundos, Gemini te manda un **POST** a tu URL cuando acaba un trabajo largo (lote, interaccion en segundo plano, video). Hay dos tipos:
+
+| Tipo | Se configura | Firma | Para que sirve |
+| :--- | :--- | :--- | :--- |
+| **Estatico** | Una vez, para todo el proyecto (`client.webhooks.create`) | Secreto compartido (HMAC) | Integraciones globales (avisar a Slack, sincronizar una base) |
+| **Dinamico** | En cada peticion (`webhook_config=`) | JWT firmado por Google (RS256, JWKS) | Mandar un trabajo concreto a un destino concreto |
+
+```mermaid
+sequenceDiagram
+    participant T as Tu codigo
+    participant G as Gemini API
+    participant S as Tu servidor HTTPS publico
+    T->>G: webhooks.create(uri, eventos)  (devuelve el secreto UNA vez)
+    T->>G: interactions.create(background=True)
+    G-->>G: trabajo largo
+    G->>S: POST firmado (id, timestamp, firma) con payload "delgado"
+    S->>S: verificar firma + marca de tiempo + deduplicar por webhook-id
+    S-->>G: 2xx enseguida
+    S->>G: interactions.get(id) para recoger el resultado
+```
+
+**Limite de esta prueba:** no hay servidor publico, asi que **no se recibio ninguna entrega real**. Todas las URLs fueron `https://example.invalid/...` (un dominio reservado que no existe) para no enviar nada a nadie.
+
+**Resultados (estaticos)**
+
+| Prueba | Resultado |
+| :--- | :--- |
+| `create` | devuelve `id`, `state: enabled` y `new_signing_secret` (`whsec_...`, **solo esta vez**); `get` solo muestra el secreto truncado |
+| Eventos validos | **solo 7**: `batch.succeeded`, `batch.expired`, `batch.failed`, `interaction.requires_action`, `interaction.completed`, `interaction.failed`, `video.generated` |
+| `batch.cancelled` / `interaction.cancelled` | **400** aunque la doc los lista (y usa el primero en su ejemplo de `update`) |
+| URI `http://` o no valida | 400 "Must start with https" |
+| URI `https://localhost:8000/h` | **se acepta** (Gemini no podria alcanzarla) |
+| Nombre repetido | **se acepta** (solo el `id` es unico) |
+| `rotate_signing_secret` | 2 modos validos; devuelve `{secret}`, siempre uno nuevo |
+
+**Webhooks dinamicos**
+
+- Exigen `background=True` (si no: 400 "background=true is required when webhook_config is specified").
+- La respuesta devuelve `webhook_config` tal cual (con tu `user_metadata`).
+- **Casi no se validan:** una URI `http://` y un `webhook_config` sin `uris` se aceptan sin error.
+
+**Verificar la firma (Standard Webhooks)**
+
+```python
+import base64, hashlib, hmac, time
+
+clave = base64.b64decode(secreto.split("_", 1)[1])     # lo que va tras "whsec_" (32 bytes)
+
+def firma(msg_id, ts, cuerpo_crudo):                  # cuerpo_crudo: str EXACTO recibido
+    firmado = f"{msg_id}.{ts}.{cuerpo_crudo}".encode()
+    return "v1," + base64.b64encode(hmac.new(clave, firmado, hashlib.sha256).digest()).decode()
+
+def verificar(cabeceras, cuerpo_crudo, tolerancia=300):
+    if abs(time.time() - int(cabeceras["webhook-timestamp"])) > tolerancia:
+        return False                                   # anti-repeticion: mas de 5 min
+    esperada = firma(cabeceras["webhook-id"], cabeceras["webhook-timestamp"], cuerpo_crudo)
+    return any(hmac.compare_digest(f, esperada) for f in cabeceras["webhook-signature"].split(" "))
+```
+
+Con una firma generada con el secreto real: la correcta es VALIDA, un cuerpo alterado se RECHAZA y un mensaje de hace 1 hora se RECHAZA. **Ojo:** solo se comprobo contra mi propia firma, no contra una entrega real de Gemini.
+
+**Trampas**
+
+1. **`client.webhooks.list()` no es una lista de webhooks**: iterarlo da tuplas campo-valor; usa `.webhooks`.
+2. **Verifica el cuerpo CRUDO**: si lo conviertes a JSON y lo vuelves a serializar, los bytes cambian y la firma deja de valer.
+3. **Un `localhost` o un nombre repetido no dan error**: la API no avisa de que un webhook no podra recibir nada.
+4. Los webhooks estaticos son **de todo el proyecto**: disparan para cualquier evento coincidente, no solo para los tuyos.
+5. Dos interacciones de prueba con `webhook_config` laxo quedaron guardadas (solo con "Reply OK."): no guardes id y no podras borrarlas.
+
+**La doc dice (no verificado):** responder 2xx en pocos segundos; reintentos durante 24 h con espera exponencial; entrega "al menos una vez" (deduplica por `webhook-id`); los dinamicos se verifican con JWKS. **Incoherencia de la doc:** el texto manda usar `https://www.googleapis.com/oauth2/v3/certs` pero el codigo usa `https://generativelanguage.googleapis.com/.well-known/jwks.json`.
+
+**Para tu CLI.** Un CLI local no puede recibir webhooks (no tiene URL publica): sondear con `interactions.get` es lo habitual. Los webhooks encajan en un servicio desplegado, no en una herramienta de escritorio.
+
+### 14.5 Video agentico - `11-optimizacion/video_agentico.py` y `_un_caso_video.py`
+
+**Idea.** Por defecto un video se procesa en modo **estatico**: 1 fotograma por segundo, todo el video entra como tokens de entrada. Con `processing: "agentic"` el modelo primero lee la transcripcion y **va a buscar solo los tramos que necesita**, con mas detalle. La doc promete hasta **88 % menos tokens de entrada** en videos largos (mas de 5 a 10 minutos) y recomienda el estatico para clips cortos.
+
+```python
+bloque = {"type": "video", "uri": archivo.uri, "mime_type": "video/mp4", "processing": "agentic"}
+r = client.interactions.create(model="gemini-3.5-flash-lite", input=[bloque, {"type": "text", "text": "..."}])
+```
+
+```mermaid
+flowchart TD
+    V[Video] --> M{processing}
+    M -->|estatico, el defecto| S[1 fotograma por segundo: todo entra como tokens de entrada]
+    M -->|agentic| A[Lee la transcripcion y decide que tramos ver]
+    A --> B[processing_call / processing_result: carga solo esos tramos]
+    B --> C[Respuesta con marcas de tiempo]
+```
+
+**El experimento.** Se uso el video de 36 s de LinkedIn (sin audio), cuyo contenido se conoce exactamente. Se hicieron tres preguntas: un resumen general, una sobre una linea concreta de la terminal (hacia el segundo 20) y una sobre las cuatro cifras finales (hacia el segundo 28). Cada una sin parametro, con `static` y con `agentic`.
+
+**Resultados** (`gemini-3.5-flash-lite`)
+
+| Pregunta | Estatico / sin parametro | Agentico | Diferencia |
+| :--- | :--- | :--- | :--- |
+| Resumen general | ~2 360 tokens | 9 entrada + 2 446 herramienta + 118 salida = **2 573** | **+9 %** |
+| Linea de la terminal | 2 376 | 35 + 2 498 + 126 = **2 659** | **+12 %** |
+| Cifras finales (una escena) | 2 377 | 18 + 1 188 + 150 = **1 356** | **-43 %** |
+
+**Lo que hay que llevarse**
+
+1. **El defecto es estatico**: con y sin `processing: "static"` los tokens son identicos. Un video de 36 s cuesta unos **2 300 tokens** (unos 64 por segundo).
+2. **En el modo agentico los tokens de entrada casi desaparecen y reaparecen como `total_tool_use_tokens`**: ahi esta el coste. Sumalos, o creeras que ahorras mas de lo real.
+3. **En un clip corto el agentico solo compensa si la pregunta apunta a un tramo concreto** (la de las cifras). En un resumen general sale peor. Coincide con la recomendacion de la doc.
+4. **Las respuestas correctas fueron las mismas en los tres modos**: la linea de la terminal se cito exacta y las cuatro cifras salieron bien.
+5. El modo agentico anade pasos nuevos (`processing_call`, `processing_result`) y **las respuestas citan marcas de tiempo** (por ejemplo "0:28 a 0:30"), util para localizar momentos.
+
+**Trampas**
+
+- **El ahorro del 88 % no se verifico**: hace falta un video largo.
+- **Modelos:** `gemini-3.1-flash-lite` + `agentic` da 400 "Agentic video processing is not enabled for this model" (como dice la doc), pero **`gemini-2.5-flash` lo acepta sin error** y responde. Ademas, **`gemini-2.5-flash` con video en modo normal se colgo 3 de 3 veces**, asi que no hubo linea base.
+- Valores validos: `static` y `agentic`; otro da 400 "Invalid enum value".
+- **Consola de Windows:** imprimir simbolos Unicode (una flecha o un triangulo de aviso) desde `cp1252` lanza `UnicodeEncodeError`. Usa `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`.
+
+**Para tu CLI.** Si el usuario pregunta por un momento concreto de un video largo, usa `agentic`; para resumir un clip corto, el defecto.
+
+---
+
+### 14.6 Resumen de la guia Optimization
+
+| Tema | Estado | Idea clave |
+| :--- | :--- | :--- |
+| O1 Cache implicito | **Hecho** | Pon lo comun al principio; `gemini-3.5-flash-lite` solo cachea con estado |
+| O2 Niveles de servicio | **Hecho** | `flex` funciona; `priority` baja a `standard` sin avisar; mira `service_tier` |
+| O3 Batch | **Bloqueado** (cuenta) | `FAILED_PRECONDITION` en todo; probablemente falta facturacion |
+| O4 Webhooks | **Hecho solo por API** | 7 eventos validos; sin servidor publico no hay entregas |
+| O5 Video agentico | **Hecho** | Solo compensa con preguntas puntuales o videos largos |
+
+**Sin verificar:** Batch (necesita cuenta de pago), `priority` real, el 88 % en videos largos, y las entregas reales de los webhooks.
